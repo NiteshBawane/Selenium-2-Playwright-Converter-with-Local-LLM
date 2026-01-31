@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selenium ➡️ Playwright AI Converter</title>
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <!-- PrismJS for Syntax Highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-dark: #0f1115;
+            --bg-panel: #181b21;
+            --border-color: #2a2e35;
+            --accent: #6c5ce7;
+            --accent-hover: #5649c0;
+            --text-main: #e0e0e0;
+            --text-muted: #8a8f98;
+            --success: #00b894;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Header --- */
+        header {
+            height: 60px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .brand i {
+            color: var(--accent);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        select {
+            background: var(--bg-dark);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+        }
+
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: var(--border-color);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-ghost:hover {
+            background: var(--border-color);
+        }
+
+        /* --- Main Content --- */
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            position: relative;
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .panel:last-child {
+            border-right: none;
+        }
+
+        .panel-header {
+            padding: 10px 20px;
+            background: rgba(24, 27, 33, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .editor-container {
+            flex: 1;
+            position: relative;
+            background: var(--bg-dark);
+            overflow: auto;
+        }
+
+        /* Naked textarea that sits on top for editing */
+        textarea.code-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            color: transparent;
+            /* Text is hidden, caret visible */
+            caret-color: white;
+            z-index: 2;
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            border: none;
+            resize: none;
+        }
+
+        textarea.code-input:focus {
+            outline: none;
+        }
+
+        /* Prism Element below the textarea */
+        pre {
+            margin: 0;
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace !important;
+            font-size: 14px !important;
+            line-height: 1.6 !important;
+            min-height: 100%;
+            pointer-events: none;
+            /* Let clicks pass to textarea */
+            z-index: 1;
+        }
+
+        /* Output specific */
+        #outputPanel {
+            background: #131519;
+        }
+
+        /* --- Loading Overlay --- */
+        .loader-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .loader-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            transform: translateY(100px);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="brand">
+            <i class="fas fa-robot"></i>
+            <span>Antigravity <span style="color:var(--text-muted); font-weight:400;">Converter</span></span>
+        </div>
+
+        <div class="controls">
+            <select id="targetLang">
+                <option value="typescript">TypeScript (.ts)</option>
+                <option value="javascript">JavaScript (.js)</option>
+            </select>
+            <button class="btn btn-ghost" onclick="clearAll()"><i class="fas fa-trash-alt"></i> Clear</button>
+            <button class="btn" id="convertBtn" onclick="convert()">
+                <i class="fas fa-magic"></i> Convert Code
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- Input Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <span><i class="fab fa-java"></i> Java / Selenium Source</span>
+                <span class="badge">Input</span>
+            </div>
+            <div class="editor-container">
+                <!-- Textarea for editing -->
+                <textarea id="javaInput" class="code-input" spellcheck="false"
+                    oninput="syncScroll(this); updateHighlight(this, 'java')"></textarea>
+                <!-- Pre for highlighting -->
+                <pre><code id="javaHighlight" class="language-java"></code></pre>
+            </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="panel" id="outputPanel">
+            <div class="panel-header">
+                <span><i class="fab fa-js"></i> Playwright Output</span>
+                <button class="btn-ghost" style="padding: 4px 10px; font-size: 0.8rem;" onclick="copyOutput()">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+            <div class="editor-container">
+                <!-- Readonly textarea for selecting text if needed -->
+                <textarea id="outputInput" class="code-input" spellcheck="false" readonly></textarea>
+                <pre><code id="outputHighlight" class="language-typescript"></code></pre>
+            </div>
+
+            <!-- Loader -->
+            <div class="loader-overlay" id="loader">
+                <div class="spinner"></div>
+                <h3 style="margin:0">Designing your Playwright Code...</h3>
+                <p style="color:var(--text-muted)">Consulting Qwen2.5 Model</p>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMsg">Conversion Complete!</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+
+    <script>
+        // Init Mock Data
+        const SAMPLE_CODE = `public class LoginTest {
+    @Test
+    public void testLogin() {
+        // Find username and enter text
+        driver.findElement(By.id("username")).sendKeys("admin");
+        
+        // Find password
+        driver.findElement(By.cssSelector(".password-field")).sendKeys("secret");
+        
+        // Click Login
+        driver.findElement(By.xpath("//button[@id='submit']")).click();
+        
+        // Assert
+        Assert.assertTrue(driver.findElement(By.id("welcome")).isDisplayed());
+    }
+}`;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('javaInput');
+            input.value = SAMPLE_CODE;
+            updateHighlight(input, 'java');
+        });
+
+        // Sync Scrolling between textarea and pre
+        function syncScroll(element) {
+            const pre = element.nextElementSibling;
+            pre.scrollTop = element.scrollTop;
+            pre.scrollLeft = element.scrollLeft;
+        }
+
+        // Live Syntax Highlighting
+        function updateHighlight(element, lang) {
+            const code = element.value;
+            // Escape HTML to prevent injection in PRE
+            const html = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            // Find code block inside PRE
+            const codeBlock = element.nextElementSibling.querySelector('code');
+            codeBlock.innerHTML = html;
+
+            // Trigger Prism
+            Prism.highlightElement(codeBlock);
+        }
+
+        function clearAll() {
+            document.getElementById('javaInput').value = '';
+            document.getElementById('outputInput').value = '';
+            updateHighlight(document.getElementById('javaInput'), 'java');
+            document.getElementById('outputHighlight').innerHTML = '';
+        }
+
+        async function convert() {
+            const javaCode = document.getElementById('javaInput').value;
+            const targetLang = document.getElementById('targetLang').value;
+            const loader = document.getElementById('loader');
+            const outputArea = document.getElementById('outputInput');
+            const outputHighlight = document.getElementById('outputHighlight');
+
+            if (!javaCode.trim()) {
+                showToast("Please enter some Java code first!", true);
+                return;
+            }
+
+            loader.classList.add('active');
+
+            try {
+                const response = await fetch('/api/convert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sourceCode: javaCode, targetLang })
+                });
+
+                const data = await response.json();
+
+                if (data.error) throw new Error(data.error);
+
+                // Update Output
+                outputArea.value = data.convertedCode;
+
+                // Update Syntax Highlighting
+                const escaped = data.convertedCode.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                outputHighlight.innerHTML = escaped;
+                outputHighlight.className = `language-${targetLang}`;
+                Prism.highlightElement(outputHighlight);
+
+                showToast("Conversion Successful!");
+
+            } catch (e) {
+                console.error(e);
+                outputArea.value = "// Error converting code:\n" + e.message;
+                outputHighlight.innerText = outputArea.value;
+                showToast("Error: " + e.message, true);
+            } finally {
+                loader.classList.remove('active');
+            }
+        }
+
+        function copyOutput() {
+            const text = document.getElementById('outputInput').value;
+            if (!text) return;
+            navigator.clipboard.writeText(text);
+            showToast("Copied to clipboard!");
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            const msgSpan = document.getElementById('toastMsg');
+
+            toast.style.backgroundColor = isError ? '#d63031' : '#00b894';
+            msgSpan.innerText = msg;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>
