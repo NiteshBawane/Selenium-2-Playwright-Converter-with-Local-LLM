@@ -14,6 +14,45 @@ Convert your Selenium Java (TestNG) test automation code to modern Playwright Ty
 - 📝 **Smart Conversion** - Maintains Page Object Model patterns and best practices
 - 🔒 **Privacy First** - All processing happens locally on your machine
 
+## 🏗️ Architecture Flow
+
+```mermaid
+graph TB
+    subgraph "Frontend (React + Vite)"
+        A[User Interface<br/>Port: 3000] --> B[Java Code Input]
+        B --> C[Convert Button Click]
+        C --> D[POST /api/convert]
+        K[Playwright Output] --> L[Syntax Highlighting<br/>Copy to Clipboard]
+    end
+    
+    subgraph "Backend (Express.js)"
+        D --> E[Express Server<br/>Port: 5000]
+        E --> F[Parse Request<br/>sourceCode + targetLang]
+        F --> G[Build System Prompt]
+    end
+    
+    subgraph "Local LLM (Ollama)"
+        G --> H[Ollama API<br/>Port: 11434]
+        H --> I[Qwen2.5:3b Model<br/>Temperature: 0.2]
+        I --> J[Generate Playwright Code]
+    end
+    
+    J --> K
+    
+    style A fill:#3b82f6,stroke:#1e40af,color:#fff
+    style E fill:#10b981,stroke:#059669,color:#fff
+    style I fill:#8b5cf6,stroke:#6d28d9,color:#fff
+    style K fill:#f59e0b,stroke:#d97706,color:#fff
+```
+
+### Data Flow:
+1. **User Input** → User pastes Selenium Java code in the React UI
+2. **API Request** → Frontend sends code to Express backend via `/api/convert`
+3. **Prompt Engineering** → Backend constructs a specialized prompt for the LLM
+4. **LLM Processing** → Ollama processes the request using Qwen2.5:3b model
+5. **Code Generation** → AI generates equivalent Playwright TypeScript/JavaScript
+6. **Response** → Converted code is sent back and displayed with syntax highlighting
+
 ## 📋 Prerequisites
 
 Before you begin, ensure you have:
